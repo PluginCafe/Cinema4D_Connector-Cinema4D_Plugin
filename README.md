@@ -26,4 +26,4 @@ If settings are not present in the preferences, you do not have the correct vers
 
 ## License
 
-This extension is licensed under the [Apache 2.0 License](LICENSE.txt).
+This extension is licensed under the [Apache 2.0 License](LICENSE).
