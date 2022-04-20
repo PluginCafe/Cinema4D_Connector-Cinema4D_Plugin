@@ -1,0 +1,6 @@
+STRINGTABLE pref_websocket_json_ce
+{
+	pref_websocket_json_ce			"WebSocket JSON Settings";
+	
+	PREFS_WEBSOCKET_JSON_CE_PORT "Port";
+}

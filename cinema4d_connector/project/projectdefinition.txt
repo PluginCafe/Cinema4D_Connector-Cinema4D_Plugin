@@ -1,0 +1,19 @@
+// Supported platforms - can be [Win32;Win64;OSX;Android;Linux;iOS]
+Platform=Win64;OSX;Linux
+
+// Type of project - can be [Lib;DLL;App]
+Type=DLL
+
+// Enable unity builds for the following directories
+unity=;
+
+// API dependencies
+APIS=cinema.framework;core.framework;math.framework;crypt.framework;python.framework;misc.framework;network.framework;cinema_hybrid.framework
+
+// Legacy C4D component
+C4D=true
+
+stylecheck.level=3 // must be set after c4d=true
+
+
+ModuleId=net.sdk.maxon.cinema4d_connector
