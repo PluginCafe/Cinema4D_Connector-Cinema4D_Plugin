@@ -51,7 +51,7 @@ In Visual Studio Code preference within the `Extensions | Cinema 4D` category.
 
 **Python Console output**: Once Visual Studio Code is connected to Cinema 4D, if new content appears in the Python console, it will also be displayed in a Visual Studio Code console called "Cinema 4D".
 
-**Syntax highliting for \*.res and \*.str files**: La syntaxe pour les fichiers avec lextension .str et .res dispose d'une colorisation syntaxique. Pour les fichier .str, en cas de syntaxe invalide, celle-ci est coloré en rouge.
+**Syntax highliting for \*.res and \*.str files**: The syntax for files with the extension .str and .res has a syntax colouring. For .str files, if the syntax is invalid, the line is coloured red.
 
 
 ## Known Issues
