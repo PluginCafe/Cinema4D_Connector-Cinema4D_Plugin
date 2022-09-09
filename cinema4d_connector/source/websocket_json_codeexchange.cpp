@@ -7,6 +7,9 @@
 #include "maxon/valuereceiver.h"
 #include "maxon/errortypes.h"
 #include "maxon/system_process.h"
+#include "maxon/basearray.h"
+#include "maxon/spinlock.h"
+#include "maxon/timer.h"
 
 #include "maxon/code_exchange.h"
 #include "maxon/network_websocket.h"
@@ -22,6 +25,12 @@ namespace maxon
 {
 
 NetworkWebSocketServerRef g_wsServer = NetworkWebSocketServerRef::NullValue();
+// console output is added to this string buffer. This String buffer is flush and sent ##consoleOutputInterval second.
+String			g_consolOutputBuffer;
+Spinlock		g_consolOutputBufferLock;
+
+// Time in second of the timer responsible to send the content of g_consolOutputBuffer to all connected IDEs.
+const Float32 consoleOutputInterval = 1;
 
 /// ----- Utilities functions ------ 
 
@@ -405,6 +414,7 @@ private:
 
 	/// Store if the WebSocket server is running, returned by IsRunning()
 	Bool _isRunning = false;
+	TimerRef _timer;
 
 public:
 	MAXON_METHOD Result<void> Start()
@@ -427,12 +437,46 @@ public:
 		g_wsServer.StartWebServer(localAddr, false, "c4d_py_code_exchange"_s) iferr_return;
 		_isRunning = true;
 
+		auto g_TimerFunction = [this]()
+		{
+			iferr_scope_handler
+			{
+				return;
+			};
+			String contentToSend;
+			g_consolOutputBufferLock.Lock();
+			contentToSend = g_consolOutputBuffer;
+			g_consolOutputBuffer = ""_s;
+			g_consolOutputBufferLock.Unlock();
+
+			for (auto const& sockRef : _websockets)
+			{
+				if (!sockRef)
+					continue;
+
+				const NetworkWebSocketConnectionRef sock = sockRef;
+
+				DataDictionary outDict;
+				outDict.Set(CODEEXCHANGE::ACTION, CODEEXCHANGE::C4D2IDE::CONSOLE) iferr_return;
+				outDict.Set(CODEEXCHANGE::VALUE, contentToSend) iferr_return;
+
+				String out = DataDictToJsonString(outDict) iferr_return;
+				iferr (sock.Send(out))
+					continue;
+			}
+		};
+
+		_timer = TimerInterface::AddPeriodicTimer(maxon::Seconds(consoleOutputInterval), g_TimerFunction, maxon::JOBQUEUE_CURRENT) iferr_return;
+
 		return OK;
 	}
 
 	MAXON_METHOD Result<void> Stop()
 	{
 		iferr_scope;
+		if (_timer)
+			_timer.CancelAndWait();
+
 		if (g_wsServer)
 		{
 			// All connection must be closed or g_wsServer.StopWebServer() is waiting forever
@@ -492,26 +536,34 @@ public:
 		return OK;
 	}
 
-	MAXON_METHOD Result<void> SendConsoleOutput(const String& content) const
+	MAXON_METHOD Result<void> SendConsoleOutput(const String& content)
 	{
 		iferr_scope;
 
-		for (auto const& sockRef : _websockets)
+		if (!_isRunning)
+			return OK;
+
+		Bool isConnected = false;
+		for (auto const& sockWeakRef : _websockets)
 		{
-			if (!sockRef)
+			if (!sockWeakRef)
 				continue;
 
-			const NetworkWebSocketConnectionRef sock = sockRef;
-
-			DataDictionary outDict;
-			outDict.Set(CODEEXCHANGE::ACTION, CODEEXCHANGE::C4D2IDE::CONSOLE) iferr_return;
-			outDict.Set(CODEEXCHANGE::VALUE, content) iferr_return;
-
-
-			String out = DataDictToJsonString(outDict) iferr_return;
-			iferr (sock.Send(out))
-				continue;
+			const NetworkWebSocketConnectionRef sockRef = sockWeakRef;
+			if (sockRef.GetState() == WEBSOCKETSTATE::CONNECTED)
+			{
+				isConnected = true;
+				break;
+			}
 		}
+
+		if (isConnected)
+		{
+			g_consolOutputBufferLock.Lock();
+			g_consolOutputBuffer += content;
+			g_consolOutputBufferLock.Unlock();
+		}
+
 		return OK;
 	}
 
