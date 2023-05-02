@@ -1,5 +1,9 @@
 # Cinema 4D Connector - Cinema 4D Plugin
 
+
+
+> :warning: **As of Cinema 4D 2023.2, this plugin is no longer required and supported**, as its functionality has been integrated into Cinema 4D. For more information please read the [Cinema 4D Connector documentation](https://help.maxon.net/c4d/en-us/#html/5896.html#codeexchangesendtoIDE).
+
 Provides a plugin for Cinema 4D to exchange code between the Script Manager and external code editors.
 
 The solution is server-based and requires a matching implementation on the side of the code editor. Such matching implementation is being provided with the Visual Studio Code extension `Cinema 4D Connector`.
